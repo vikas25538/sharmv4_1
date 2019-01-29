@@ -1,0 +1,26 @@
+For my spring based project, i needed to upgrade the spring version from 3.1.2.RELEASE to the latest ie 5.1.4. 
+This document captures the hurdles faced and solutions for the issue.
+Updating the Spring to latest version made the code not to compile. I needed to add additional depedencies namely spring-tx, spring-jdbc and 
+spring-context-support as depedency for spring-context.
+Since we are using spring-security in our project, i was forced to update the springframework.security to latest ie 5.1.3 release.
+
+web.xml needs updatation of xmlns and xsi:schemalocation  to the latest. This updation is required to be on the latest. It did not throw
+any error per se.
+
+In the servelet context xml, you need to refer to latest schema definitions for the spring framework. You need to do the same in all such xml 
+configuration files.
+Main changes are wrt security context.in the http section you need to include use-expressions="false" so that  access parameter
+defined like (access="ROLE_USER, ROLE_ADMIN") remains same OR you need to change this  to (access="hasanyrole('ROLE_USER', 'ROLE_ADMIN')").
+This ensures backword compatibility.
+Example <intercept-url pattern="/repositories/*/profiles" access="hasAnyRole('ROLE_USER', 'ROLE_ADMIN')" method="GET"/>
+
+Spring security configuration needs the login form point to j_security_check servelet and user credentials are collected in j_username and j_password.
+Spring 4 onwords security filters are enabled by default. So csrf protection filter prevents this call forwarding saying http 405, POST is not supported
+for j_spring_security_check. You need to put <csrf disabled="true"> in http section on security context xml.
+For correct user credential mapping, In the login form, the params name getting user credentials need to be changed to username and password from j_username and j_password 
+OR add username-parameter="j_username" password-parameter="j_password"in security-context.xml's form-login section.
+Also login-processing-url="/j_spring_security_check" needs to be added to security-context.xml's form-login section.
+
+Reference:
+https://stackoverflow.com/questions/31607021/spring-security-username-is-sent-empty-for-login-after-upgrade-to-spring-secur
+https://docs.spring.io/spring-security/site/migrate/current/3-to-4/html5/migrate-3-to-4-xml.html#m3to4-xmlnamespace-form-login
