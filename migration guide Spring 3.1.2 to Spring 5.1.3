@@ -21,6 +21,21 @@ For correct user credential mapping, In the login form, the params name getting 
 OR add username-parameter="j_username" password-parameter="j_password"in security-context.xml's form-login section.
 Also login-processing-url="/j_spring_security_check" needs to be added to security-context.xml's form-login section.
 
+Also migrarted our project from MyBatis 3.2.1 to MyBatis 3.5. And it started to fail in multiple requests, becaues we often used positioning parameters like #{0}.
+After some investigations, I found, that in #549 (MyBatis 3.4.1) a new parameter `useActualParamName` was introduced with the default value `true`.
+That is why `ParamNameResolver` uses parameter names which are either `arg0, arg1` or correct names if `-parameters` is specified, but non old-fashioned `0, 1`. 
+This breaks the backward compatibility. 
+Example public List<com.test.myTest> getAllbyDate(@Param("date") Date date, @Param("myid") int myid) 
+Then, modify xml file
+
+<select id="getAllbyDate" parameterType="map" resultType="com.test.myTest" resultOrdered="true"> 
+Mybatis puts all parameters with annotation @Param into map.
+Include @org.apache.ibatis.annotations.Param
+Also needed to include  resultOrdered="true" in the select statements in the mapper xmls.
+
+Workaround is to explicitely set `useActualParamName` to false. Or refactor all the requests to use `param1, param2`, `@Param` or Java8 named parameters. we used named params.
+Also it required us to move to JAVA 1.8 or higher.
+
 Reference:
 https://stackoverflow.com/questions/31607021/spring-security-username-is-sent-empty-for-login-after-upgrade-to-spring-secur
 https://docs.spring.io/spring-security/site/migrate/current/3-to-4/html5/migrate-3-to-4-xml.html#m3to4-xmlnamespace-form-login
